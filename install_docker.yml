@@ -1,0 +1,38 @@
+---
+- name: Install Docker Playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Check the distribution
+      command: lsb_release -is
+      register: distro
+
+    - name: Install Docker on Ubuntu
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        state: present
+      when: distro.stdout == "Ubuntu"
+
+    - name: Install Docker on Debian
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        state: present
+      when: distro.stdout == "Debian"
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+
+    - name: Display Docker version
+      debug:
+        msg: "Docker version installed: {{ docker_version.stdout }}"
