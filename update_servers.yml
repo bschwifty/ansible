@@ -1,0 +1,23 @@
+---
+- name: System Maintenance Playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Check disk usage
+      command: df -h
+      register: disk_usage
+
+    - name: Write note if any storage is above 80%
+      debug:
+        msg: "Warning: {{ item }} is above 80% usage!"
+      when: item.split()[4].rstrip('%') | int > 80
+      loop: "{{ disk_usage.stdout_lines[1:] }}"
+
+    - name: Prune unused Docker data
+      command: docker system prune -y
+      ignore_errors: yes
