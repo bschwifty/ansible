@@ -3,25 +3,39 @@
   hosts: all
   become: yes
   tasks:
-    - name: Check the distribution
+    - name: Check distro
       command: lsb_release -is
       register: distro
 
-    - name: Install Docker on Ubuntu
+    - name: Install required packages
       apt:
-        name: 
-          - docker.io
-          - docker-compose
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
         state: present
-      when: distro.stdout == "Ubuntu"
 
-    - name: Install Docker on Debian
+    - name: Add Docker GPG key
+      command: curl -fsSL https://download.docker.com/linux/{{ distro.stdout | lower }}/gpg | apt-key add -
+      when: distro.stdout in ["Ubuntu", "Debian"]
+
+    - name: Set up stable repo
+      command: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/{{ distro.stdout | lower }} $(lsb_release -cs) stable"
+      when: distro.stdout in ["Ubuntu", "Debian"]
+
+    - name: Update apt package index
       apt:
-        name: 
-          - docker.io
+        update_cache: yes
+
+    - name: Install Docker and Docker Compose
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
           - docker-compose
         state: present
-      when: distro.stdout == "Debian"
 
     - name: Start and enable Docker service
       service:
